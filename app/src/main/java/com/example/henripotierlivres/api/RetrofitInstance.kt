@@ -24,7 +24,7 @@ class RetrofitInstance {
 
         }
         val api by lazy {
-            retrofit.create(HenriPotierApi::class.java)
+            retrofit.create(BooksApi::class.java)
         }
     }
 }
