@@ -15,10 +15,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -28,105 +35,154 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
+import coil.compose.rememberImagePainter
+import com.example.henripotierlivres.api.RetrofitInstance
 import com.example.henripotierlivres.models.BooksResponse
+import com.example.henripotierlivres.repository.BooksRepository
 import com.example.henripotierlivres.ui.theme.HenriPotierLivresTheme
+import com.example.henripotierlivres.util.Resource
 
 class MainActivity : ComponentActivity() {
+
+    lateinit var viewModel : BooksViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val booksRepository = BooksRepository(RetrofitInstance.api)
+        val viewModelProviderFactory = BooksViewModelProviderFactory(booksRepository)
+        viewModel = ViewModelProvider(
+            this, viewModelProviderFactory
+        ).get(BooksViewModel::class.java)
         setContent {
             HenriPotierLivresTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("Android")
-                }
+             App(bookViewModel = viewModel)
             }
         }
     }
 }
 
+
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
+fun BookList(modifier: Modifier, books: List<BooksResponse>, addToCart: (BooksResponse) -> Unit) {
+    LazyColumn(
         modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    HenriPotierLivresTheme {
-        Greeting("Android")
-    }
-}
-
-
-@Composable
-fun BookList(books: List<BooksResponse>) {
-    LazyColumn {
+    ) {
         items(books) { book ->
-            BookItem(book)
+            BookItem(book, addToCart)
+
         }
     }
 }
 
 @Composable
-fun BookItem(book: BooksResponse) {
-    Row(
+fun BookItem(book: BooksResponse , addToCart: (BooksResponse) -> Unit) {
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
+
     ) {
-        // Display book cover image
-        Image(
-            painter = painterResource(id = R.drawable.placeholder_cover),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        Row(
             modifier = Modifier
-                .size(100.dp)
-                .clip(MaterialTheme.shapes.medium)
-        )
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Display book cover image
+            Image(
+                rememberImagePainter(
+                    data = book.cover),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(MaterialTheme.shapes.medium)
+            )
 
-        Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-        Column {
-            Text(
-                text = book.title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "ISBN: ${book.isbn}",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.primaryContainer
-            )
-            Text(
-                text = "$${book.price}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Synopsis: ${book.synopsis.joinToString(", ")}",
-                fontSize = 14.sp
-            )
+            Column {
+                Text(
+                    text = book.title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "$${book.price}",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Synopsis: ${book.synopsis.joinToString(", ").take(50)}",
+                    fontSize = 14.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { addToCart(book) }) {
+                    Text(text = "Ajouter au panier")
+                }
+            }
         }
     }
+
+
 }
 
 @Composable
-fun App(bookViewModel: BooksViewModel = viewModel()) {
+fun App(bookViewModel: BooksViewModel) {
+
+    val books = bookViewModel.books.observeAsState()
+    var cart by remember { mutableStateOf(emptyList<BooksResponse>()) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        BookList(books = books)
+        when(books.value){
+            is Resource.Error -> Unit
+            is Resource.Loading -> Unit
+            is Resource.Success -> {
+                BookList(modifier = Modifier.weight(1f), books = books.value!!.data!!) { book ->
+                    cart = cart + book
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                CartSummary(cart = cart)
+            }
+            null -> Unit
+        }
+
     }
 }
+
+
+
+@Composable
+fun CartSummary(cart: List<BooksResponse>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Récap du Panier",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Text(text = "Articles: ${cart.size}")
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Prix total: $${cart.sumOf { it.price }}")
+    }
+}
+
+
+
+
+
+
+
 

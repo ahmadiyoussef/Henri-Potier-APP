@@ -3,6 +3,8 @@ package com.example.henripotierlivres.repository
 import com.example.henripotierlivres.api.BooksApi
 import com.example.henripotierlivres.models.BooksResponse
 import com.example.henripotierlivres.models.CommercialOffer
+import com.example.henripotierlivres.models.Offer
+import retrofit2.Call
 
 
 class BooksRepository(private val apiBooks: BooksApi) {
@@ -11,7 +13,7 @@ class BooksRepository(private val apiBooks: BooksApi) {
         return apiBooks.getBooks()
     }
 
-    suspend fun getCommercialOffers(isbnList: String): List<CommercialOffer> {
-        return apiBooks.getCommercialOffers(isbnList)
+    suspend fun getCommercialOffers(selectedIsbnList: List<String>): List<CommercialOffer> {
+        return apiBooks.getCommercialOffers(selectedIsbnList)
     }
 }

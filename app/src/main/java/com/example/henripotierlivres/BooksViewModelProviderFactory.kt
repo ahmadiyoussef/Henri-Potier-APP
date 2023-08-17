@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.henripotierlivres.repository.BooksRepository
 
-class EmployeeViewModelProviderFactory(
+class BooksViewModelProviderFactory(
     private val repository: BooksRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
