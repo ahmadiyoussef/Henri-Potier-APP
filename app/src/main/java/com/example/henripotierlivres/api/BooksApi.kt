@@ -15,5 +15,5 @@ interface BooksApi {
     ): List<BooksResponse>
 
     @GET("books/{isbns}/commercialOffers")
-    suspend fun getCommercialOffers(@Path("isbns") selectedIsbnList: List<String>): List<CommercialOffer>
+    suspend fun getCommercialOffers(@Path("isbns") isbns: String): List<CommercialOffer>
 }

@@ -12,5 +12,6 @@ data class BooksResponse(
     @SerializedName("synopsis")
     val synopsis: List<String>,
     @SerializedName("title")
-    val title: String
+    val title: String,
+    var isSelected: Boolean
 )

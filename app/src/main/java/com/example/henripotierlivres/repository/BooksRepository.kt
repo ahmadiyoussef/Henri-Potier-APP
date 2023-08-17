@@ -14,6 +14,7 @@ class BooksRepository(private val apiBooks: BooksApi) {
     }
 
     suspend fun getCommercialOffers(selectedIsbnList: List<String>): List<CommercialOffer> {
-        return apiBooks.getCommercialOffers(selectedIsbnList)
+        val isbns = selectedIsbnList.joinToString(",")
+        return apiBooks.getCommercialOffers(isbns)
     }
 }

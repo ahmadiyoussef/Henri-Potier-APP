@@ -17,12 +17,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,19 +66,19 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun BookList(modifier: Modifier, books: List<BooksResponse>, addToCart: (BooksResponse) -> Unit) {
+fun BookList(modifier: Modifier, books: List<BooksResponse>, addToCart: (BooksResponse) -> Unit, selectedBooks: MutableList<BooksResponse>) {
     LazyColumn(
         modifier = modifier
     ) {
         items(books) { book ->
-            BookItem(book, addToCart)
+            BookItem(book, addToCart, selectedBooks)
 
         }
     }
 }
 
 @Composable
-fun BookItem(book: BooksResponse , addToCart: (BooksResponse) -> Unit) {
+fun BookItem(book: BooksResponse , addToCart: (BooksResponse) -> Unit, selectedBooks: MutableList<BooksResponse>) {
 
     Card(
         modifier = Modifier
@@ -101,6 +103,15 @@ fun BookItem(book: BooksResponse , addToCart: (BooksResponse) -> Unit) {
             )
 
             Spacer(modifier = Modifier.width(16.dp))
+
+            Checkbox(
+                checked = book.isSelected,
+                onCheckedChange = {
+                    book.isSelected = it
+                    if (it) selectedBooks.add(book)
+                    else selectedBooks.remove(book)
+                }
+            )
 
             Column {
                 Text(
@@ -136,6 +147,7 @@ fun App(bookViewModel: BooksViewModel) {
 
     val books = bookViewModel.books.observeAsState()
     var cart by remember { mutableStateOf(emptyList<BooksResponse>()) }
+    val selectedBooks = remember { mutableStateListOf<BooksResponse>() }
 
     Column(
         modifier = Modifier
@@ -146,9 +158,9 @@ fun App(bookViewModel: BooksViewModel) {
             is Resource.Error -> Unit
             is Resource.Loading -> Unit
             is Resource.Success -> {
-                BookList(modifier = Modifier.weight(1f), books = books.value!!.data!!) { book ->
+                BookList(modifier = Modifier.weight(1f),  books = books.value!!.data!!, { book ->
                     cart = cart + book
-                }
+                }, selectedBooks)
                 Spacer(modifier = Modifier.height(16.dp))
                 CartSummary(cart = cart)
             }
